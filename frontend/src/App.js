@@ -69,7 +69,9 @@ function App() {
       poste: postulation.poste || '',
       plateforme: postulation.plateforme || '',
       lien: postulation.lien || '',
-      coche: postulation.coche || false
+      coche: postulation.coche || false,
+      cvPath: postulation.cvPath || '',
+      cvOriginalName: postulation.cvOriginalName || ''
     });
   };
 
