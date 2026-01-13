@@ -9,6 +9,7 @@
     "client": "cd frontend && npm start",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "build": "cd frontend && npm install && npm run build",
+    "build:check": "node -e \"const fs=require('fs'); const path=require('path'); const buildPath=path.join(__dirname,'frontend/build'); console.log('Build path:', buildPath); console.log('Build exists:', fs.existsSync(buildPath));\"",
     "start": "cd backend && node server.js"
   },
   "keywords": ["postulation", "suivi", "cv"],

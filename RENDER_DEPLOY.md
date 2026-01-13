@@ -20,6 +20,8 @@ Le frontend et le backend sont hébergés sur **un seul service** Render. Le bac
    - **Build Command:** `npm run install-all && npm run build`
    - **Start Command:** `cd backend && node server.js`
 
+   ⚠️ **Important :** Le Build Command doit s'exécuter avec succès. Vérifiez les logs pour vous assurer que le frontend a bien été buildé (dossier `frontend/build` créé).
+
    **Variables d'environnement :**
    
    Cliquez sur "Environment" et ajoutez :
