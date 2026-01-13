@@ -263,6 +263,112 @@ tbody tr:last-child td {
   gap: 8px;
 }
 
+/* CV Column */
+.cv-cell {
+  min-width: 200px;
+}
+
+.cv-upload {
+  display: flex;
+  justify-content: center;
+}
+
+.cv-upload-label {
+  cursor: pointer;
+}
+
+.cv-upload-button {
+  display: inline-block;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.cv-upload-button:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+  transform: translateY(-1px);
+}
+
+.cv-upload-label input[type="file"]:disabled + .cv-upload-button {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cv-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.cv-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #f7fafc;
+  border-radius: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.cv-icon {
+  font-size: 1.2rem;
+}
+
+.cv-name {
+  font-size: 0.85rem;
+  color: #2d3748;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.cv-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.btn-cv {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-cv:hover {
+  transform: scale(1.1);
+  background-color: #f7fafc;
+}
+
+.btn-view:hover {
+  background-color: #e6fffa;
+}
+
+.btn-download:hover {
+  background-color: #e6f3ff;
+}
+
+.btn-delete-cv:hover {
+  background-color: #fed7d7;
+}
+
 /* Actions */
 .actions-cell {
   text-align: center;

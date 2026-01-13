@@ -19,6 +19,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Servir les fichiers uploadés
+const uploadsPath = path.join(__dirname, 'uploads');
+if (fs.existsSync(uploadsPath)) {
+  app.use('/uploads', express.static(uploadsPath));
+}
+
 // Routes API
 app.use('/api/postulations', postulationsRoutes);
 

@@ -27,6 +27,21 @@ const postulationSchema = new mongoose.Schema({
   coche: {
     type: Boolean,
     default: false
+  },
+  cvPath: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  cvOriginalName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  cvFileName: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true

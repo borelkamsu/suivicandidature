@@ -12,6 +12,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+  const [uploadingCv, setUploadingCv] = useState(null);
 
   useEffect(() => {
     chargerPostulations();
@@ -101,6 +102,85 @@ function App() {
     }
   };
 
+  const uploadCV = async (id, file) => {
+    if (!file) return;
+
+    // Vérifier le type de fichier
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Type de fichier non autorisé. Seuls les fichiers PDF, DOC et DOCX sont acceptés.');
+      return;
+    }
+
+    // Vérifier la taille (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux. Taille maximale: 10MB');
+      return;
+    }
+
+    setUploadingCv(id);
+    try {
+      const formData = new FormData();
+      formData.append('cv', file);
+
+      const response = await axios.post(`${API_URL}/postulations/${id}/cv`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      // Mettre à jour la postulation avec les nouvelles infos CV
+      setPostulations(postulations.map(p => 
+        p._id === id 
+          ? { ...p, cvPath: response.data.cvPath, cvOriginalName: response.data.cvOriginalName }
+          : p
+      ));
+      
+      alert('CV uploadé avec succès !');
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      alert('Erreur lors de l\'upload du CV: ' + (error.response?.data?.message || 'Erreur inconnue'));
+    } finally {
+      setUploadingCv(null);
+    }
+  };
+
+  const telechargerCV = (postulation) => {
+    if (!postulation.cvPath) {
+      alert('Aucun CV disponible pour cette postulation');
+      return;
+    }
+    window.open(`${API_URL}/postulations/${postulation._id}/cv/download`, '_blank');
+  };
+
+  const visualiserCV = (postulation) => {
+    if (!postulation.cvPath) {
+      alert('Aucun CV disponible pour cette postulation');
+      return;
+    }
+    // Ouvrir le PDF dans un nouvel onglet
+    window.open(`${API_URL}/postulations/${postulation._id}/cv/download`, '_blank');
+  };
+
+  const supprimerCV = async (id) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer le CV de cette postulation ?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/postulations/${id}/cv`);
+      setPostulations(postulations.map(p => 
+        p._id === id 
+          ? { ...p, cvPath: '', cvOriginalName: '', cvFileName: '' }
+          : p
+      ));
+      alert('CV supprimé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      alert('Erreur lors de la suppression du CV');
+    }
+  };
+
   const exporterExcel = () => {
     // Préparer les données
     const data = postulations.map(p => ({
@@ -108,6 +188,7 @@ function App() {
       'Poste': p.poste || '',
       'Plateforme': p.plateforme || '',
       'Lien': p.lien || '',
+      'CV': p.cvOriginalName || 'Non',
       'Coché': p.coche ? 'Oui' : 'Non',
       'Date de création': p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : ''
     }));
@@ -122,6 +203,7 @@ function App() {
       { wch: 25 }, // Poste
       { wch: 15 }, // Plateforme
       { wch: 40 }, // Lien
+      { wch: 20 }, // CV
       { wch: 10 }, // Coché
       { wch: 15 }  // Date
     ];
@@ -177,6 +259,7 @@ function App() {
                 <th>Nom de l'entreprise</th>
                 <th>Poste</th>
                 <th>Plateforme / Lien</th>
+                <th>CV</th>
                 <th className="col-actions">Actions</th>
               </tr>
             </thead>
@@ -271,6 +354,63 @@ function App() {
                               <span className="placeholder">—</span>
                             )}
                           </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="cv-cell">
+                      {postulation.cvPath ? (
+                        <div className="cv-actions">
+                          <div className="cv-info">
+                            <span className="cv-icon">📄</span>
+                            <span className="cv-name" title={postulation.cvOriginalName}>
+                              {postulation.cvOriginalName.length > 20 
+                                ? postulation.cvOriginalName.substring(0, 20) + '...' 
+                                : postulation.cvOriginalName}
+                            </span>
+                          </div>
+                          <div className="cv-buttons">
+                            <button
+                              onClick={() => visualiserCV(postulation)}
+                              className="btn-cv btn-view"
+                              title="Visualiser le CV"
+                            >
+                              👁️
+                            </button>
+                            <button
+                              onClick={() => telechargerCV(postulation)}
+                              className="btn-cv btn-download"
+                              title="Télécharger le CV"
+                            >
+                              ⬇️
+                            </button>
+                            <button
+                              onClick={() => supprimerCV(postulation._id)}
+                              className="btn-cv btn-delete-cv"
+                              title="Supprimer le CV"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="cv-upload">
+                          <label className="cv-upload-label">
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx"
+                              onChange={(e) => {
+                                if (e.target.files[0]) {
+                                  uploadCV(postulation._id, e.target.files[0]);
+                                }
+                                e.target.value = ''; // Reset pour permettre de re-uploader le même fichier
+                              }}
+                              style={{ display: 'none' }}
+                              disabled={uploadingCv === postulation._id}
+                            />
+                            <span className="cv-upload-button">
+                              {uploadingCv === postulation._id ? '⏳ Upload...' : '📤 Upload CV'}
+                            </span>
+                          </label>
                         </div>
                       )}
                     </td>

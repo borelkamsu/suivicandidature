@@ -7,6 +7,8 @@ dist/
 *.log
 .vscode/
 .idea/
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Fichiers d'environnement d'exemple (on peut les garder)
 !backend/env.example
