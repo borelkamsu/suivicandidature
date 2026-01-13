@@ -38,6 +38,12 @@ function App() {
       setPostulations([...postulations, response.data]);
     } catch (error) {
       console.error('Erreur lors de l\'ajout:', error);
+      if (error.response) {
+        console.error('Détails de l\'erreur:', error.response.data);
+        alert('Erreur lors de l\'ajout: ' + (error.response.data.message || 'Erreur inconnue'));
+      } else {
+        alert('Erreur de connexion au serveur');
+      }
     }
   };
 

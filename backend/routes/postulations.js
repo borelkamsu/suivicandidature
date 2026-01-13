@@ -25,7 +25,11 @@ router.post('/', async (req, res) => {
     const nouvellePostulation = await postulation.save();
     res.status(201).json(nouvellePostulation);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Erreur lors de la création de la postulation:', error);
+    res.status(400).json({ 
+      message: error.message,
+      details: error.errors ? Object.values(error.errors).map(e => e.message) : []
+    });
   }
 });
 

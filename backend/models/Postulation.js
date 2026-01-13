@@ -3,18 +3,21 @@ const mongoose = require('mongoose');
 const postulationSchema = new mongoose.Schema({
   nomEntreprise: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: ''
   },
   poste: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: ''
   },
   plateforme: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: ''
   },
   lien: {
     type: String,
