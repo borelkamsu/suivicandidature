@@ -2,6 +2,8 @@
 
 API REST pour l'application de suivi des postulations.
 
+**Note :** En production, ce serveur sert aussi les fichiers statiques du frontend depuis `/frontend/build`.
+
 ## Variables d'environnement
 
 Créez un fichier `.env` à la racine du dossier `backend/` :

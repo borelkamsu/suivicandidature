@@ -54,7 +54,9 @@ npm run client  # Frontend sur http://localhost:3000
 
 ## Déploiement sur Render
 
-### Configuration Backend sur Render
+### Configuration - Service Unique (Frontend + Backend)
+
+Le frontend et le backend sont hébergés sur **un seul service** Render. Le backend sert automatiquement les fichiers statiques du frontend en production.
 
 1. **Créer un nouveau service Web sur Render :**
    - Allez sur [Render Dashboard](https://dashboard.render.com)
@@ -62,9 +64,9 @@ npm run client  # Frontend sur http://localhost:3000
    - Connectez votre repository GitHub
 
 2. **Configurer les paramètres :**
-   - **Name:** `suivi-postulation-backend`
+   - **Name:** `suivi-postulation`
    - **Environment:** `Node`
-   - **Build Command:** `cd backend && npm install`
+   - **Build Command:** `npm run install-all && npm run build`
    - **Start Command:** `cd backend && node server.js`
    - **Root Directory:** (laissez vide ou mettez `.`)
 
@@ -78,50 +80,18 @@ npm run client  # Frontend sur http://localhost:3000
    | `PORT` | `5000` (Render assignera automatiquement un port, mais gardez cette variable) |
    | `MONGODB_URI` | `mongodb+srv://lama:lama@cluster0.254tgqb.mongodb.net/suivipostulation?retryWrites=true&w=majority` |
 
-   **Important :** Pour `MONGODB_URI`, utilisez exactement cette valeur avec le nom de la base de données `suivipostulation` avant le point d'interrogation.
+   **Important :** 
+   - Pour `MONGODB_URI`, utilisez exactement cette valeur avec le nom de la base de données `suivipostulation` avant le point d'interrogation.
+   - **Vous n'avez PAS besoin** de `REACT_APP_API_URL` car le frontend utilise automatiquement une URL relative (`/api`) en production.
 
 4. **Déployer :**
    - Cliquez sur "Create Web Service"
    - Render va automatiquement déployer votre application
+   - Le build peut prendre 5-10 minutes la première fois
 
-### Configuration Frontend sur Render
-
-1. **Créer un nouveau service Static Site sur Render :**
-   - Allez sur "New +" → "Static Site"
-   - Connectez votre repository GitHub
-
-2. **Configurer les paramètres :**
-   - **Name:** `suivi-postulation-frontend`
-   - **Build Command:** `cd frontend && npm install && npm run build`
-   - **Publish Directory:** `frontend/build`
-
-3. **Variables d'environnement :**
-   
-   Ajoutez une variable pour l'URL de votre backend :
-
-   | Key | Value |
-   |-----|-------|
-   | `REACT_APP_API_URL` | `https://votre-backend-url.onrender.com/api` |
-
-   Remplacez `votre-backend-url` par l'URL réelle de votre service backend sur Render.
-
-4. **Déployer :**
-   - Cliquez sur "Create Static Site"
-   - Render va automatiquement déployer votre frontend
-
-### Alternative : Service Web pour Frontend
-
-Si vous préférez déployer le frontend comme un service Web (pour plus de flexibilité) :
-
-1. Créez un service Web au lieu d'un Static Site
-2. **Build Command:** `cd frontend && npm install && npm run build`
-3. **Start Command:** `cd frontend && npx serve -s build -l 3000`
-4. Installez `serve` dans `frontend/package.json` :
-   ```json
-   "dependencies": {
-     "serve": "^14.2.1"
-   }
-   ```
+5. **Accéder à l'application :**
+   - Une fois déployé, votre application sera accessible à l'URL fournie par Render (ex: `https://suivi-postulation.onrender.com`)
+   - Le frontend et le backend sont servis depuis la même URL
 
 ## Base de Données MongoDB Atlas
 
