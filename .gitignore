@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+build/
+dist/
+*.log
+.vscode/
+.idea/
+
+# Fichiers d'environnement d'exemple (on peut les garder)
+!backend/env.example
+!frontend/env.example
