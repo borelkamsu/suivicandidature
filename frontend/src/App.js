@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import './App.css';
 
 // Utiliser l'URL relative en production (même domaine) ou l'URL configurée
@@ -9,6 +10,8 @@ const API_URL = process.env.REACT_APP_API_URL ||
 function App() {
   const [postulations, setPostulations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
 
   useEffect(() => {
     chargerPostulations();
@@ -58,151 +61,262 @@ function App() {
     }
   };
 
-  const supprimerPostulation = async (id) => {
+  const activerEdition = (postulation) => {
+    setEditingId(postulation._id);
+    setEditData({
+      nomEntreprise: postulation.nomEntreprise || '',
+      poste: postulation.poste || '',
+      plateforme: postulation.plateforme || '',
+      lien: postulation.lien || '',
+      coche: postulation.coche || false
+    });
+  };
+
+  const annulerEdition = () => {
+    setEditingId(null);
+    setEditData({});
+  };
+
+  const sauvegarderEdition = async (id) => {
     try {
-      await axios.delete(`${API_URL}/postulations/${id}`);
-      setPostulations(postulations.filter(p => p._id !== id));
+      await axios.put(`${API_URL}/postulations/${id}`, editData);
+      setPostulations(postulations.map(p => p._id === id ? { ...p, ...editData } : p));
+      setEditingId(null);
+      setEditData({});
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      console.error('Erreur lors de la sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde');
     }
   };
 
-  const exporterCSV = () => {
-    const enTetes = ['Nom Entreprise', 'Poste', 'Plateforme', 'Lien', 'Coché'];
-    const lignes = postulations.map(p => [
-      p.nomEntreprise || '',
-      p.poste || '',
-      p.plateforme || '',
-      p.lien || '',
-      p.coche ? 'Oui' : 'Non'
-    ]);
+  const supprimerPostulation = async (id) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette postulation ?')) {
+      try {
+        await axios.delete(`${API_URL}/postulations/${id}`);
+        setPostulations(postulations.filter(p => p._id !== id));
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        alert('Erreur lors de la suppression');
+      }
+    }
+  };
 
-    const csvContent = [
-      enTetes.join(','),
-      ...lignes.map(ligne => ligne.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
+  const exporterExcel = () => {
+    // Préparer les données
+    const data = postulations.map(p => ({
+      'Nom Entreprise': p.nomEntreprise || '',
+      'Poste': p.poste || '',
+      'Plateforme': p.plateforme || '',
+      'Lien': p.lien || '',
+      'Coché': p.coche ? 'Oui' : 'Non',
+      'Date de création': p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : ''
+    }));
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const lien = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    lien.setAttribute('href', url);
-    lien.setAttribute('download', `postulations_${new Date().toISOString().split('T')[0]}.csv`);
-    lien.style.visibility = 'hidden';
-    document.body.appendChild(lien);
-    lien.click();
-    document.body.removeChild(lien);
+    // Créer un workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    // Ajuster la largeur des colonnes
+    const colWidths = [
+      { wch: 25 }, // Nom Entreprise
+      { wch: 25 }, // Poste
+      { wch: 15 }, // Plateforme
+      { wch: 40 }, // Lien
+      { wch: 10 }, // Coché
+      { wch: 15 }  // Date
+    ];
+    ws['!cols'] = colWidths;
+
+    // Ajouter la feuille au workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Postulations');
+
+    // Générer le fichier Excel
+    const fileName = `postulations_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   if (loading) {
-    return <div className="container">Chargement...</div>;
+    return (
+      <div className="container">
+        <div className="loading">Chargement...</div>
+      </div>
+    );
   }
 
   return (
     <div className="container">
       <header>
-        <h1>Suivi des Postulations</h1>
+        <div className="header-title">
+          <h1>📋 Suivi des Postulations</h1>
+          <p className="subtitle">Gérez vos candidatures en un seul endroit</p>
+        </div>
         <div className="header-buttons">
           <button onClick={ajouterLigne} className="btn btn-primary">
-            + Ajouter une ligne
+            <span className="btn-icon">➕</span>
+            Ajouter une ligne
           </button>
-          <button onClick={exporterCSV} className="btn btn-secondary">
-            📥 Exporter en CSV
+          <button onClick={exporterExcel} className="btn btn-secondary">
+            <span className="btn-icon">📊</span>
+            Exporter en Excel
           </button>
         </div>
       </header>
 
       <div className="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: '50px' }}>Coché</th>
-              <th>Nom de l'entreprise</th>
-              <th>Poste</th>
-              <th>Plateforme / Lien</th>
-              <th style={{ width: '100px' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {postulations.length === 0 ? (
+        {postulations.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📝</div>
+            <h3>Aucune postulation</h3>
+            <p>Cliquez sur "Ajouter une ligne" pour commencer à suivre vos candidatures</p>
+          </div>
+        ) : (
+          <table>
+            <thead>
               <tr>
-                <td colSpan="5" className="empty-message">
-                  Aucune postulation. Cliquez sur "Ajouter une ligne" pour commencer.
-                </td>
+                <th className="col-checkbox">✓</th>
+                <th>Nom de l'entreprise</th>
+                <th>Poste</th>
+                <th>Plateforme / Lien</th>
+                <th className="col-actions">Actions</th>
               </tr>
-            ) : (
-              postulations.map((postulation) => (
-                <tr key={postulation._id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={postulation.coche || false}
-                      onChange={(e) => mettreAJourPostulation(postulation._id, 'coche', e.target.checked)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={postulation.nomEntreprise || ''}
-                      onChange={(e) => mettreAJourPostulation(postulation._id, 'nomEntreprise', e.target.value)}
-                      placeholder="Nom de l'entreprise"
-                      className="table-input"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={postulation.poste || ''}
-                      onChange={(e) => mettreAJourPostulation(postulation._id, 'poste', e.target.value)}
-                      placeholder="Poste"
-                      className="table-input"
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={postulation.plateforme || ''}
-                      onChange={(e) => mettreAJourPostulation(postulation._id, 'plateforme', e.target.value)}
-                      className="table-select"
-                    >
-                      <option value="">Sélectionner...</option>
-                      <option value="LinkedIn">LinkedIn</option>
-                      <option value="Indeed">Indeed</option>
-                      <option value="Autre">Autre plateforme</option>
-                    </select>
-                    {postulation.plateforme === 'Autre' && (
-                      <input
-                        type="text"
-                        value={postulation.lien || ''}
-                        onChange={(e) => mettreAJourPostulation(postulation._id, 'lien', e.target.value)}
-                        placeholder="Nom de la plateforme"
-                        className="table-input"
-                        style={{ marginTop: '5px' }}
-                      />
-                    )}
-                    {postulation.plateforme && postulation.plateforme !== 'Autre' && (
-                      <input
-                        type="text"
-                        value={postulation.lien || ''}
-                        onChange={(e) => mettreAJourPostulation(postulation._id, 'lien', e.target.value)}
-                        placeholder="Lien (optionnel)"
-                        className="table-input"
-                        style={{ marginTop: '5px' }}
-                      />
-                    )}
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => supprimerPostulation(postulation._id)}
-                      className="btn-delete"
-                      title="Supprimer"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {postulations.map((postulation) => {
+                const isEditing = editingId === postulation._id;
+                return (
+                  <tr key={postulation._id} className={isEditing ? 'editing' : ''}>
+                    <td className="checkbox-cell">
+                      {isEditing ? (
+                        <input
+                          type="checkbox"
+                          checked={editData.coche || false}
+                          onChange={(e) => setEditData({ ...editData, coche: e.target.checked })}
+                          className="checkbox-input"
+                        />
+                      ) : (
+                        <input
+                          type="checkbox"
+                          checked={postulation.coche || false}
+                          onChange={(e) => mettreAJourPostulation(postulation._id, 'coche', e.target.checked)}
+                          className="checkbox-input"
+                        />
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editData.nomEntreprise}
+                          onChange={(e) => setEditData({ ...editData, nomEntreprise: e.target.value })}
+                          placeholder="Nom de l'entreprise"
+                          className="table-input"
+                        />
+                      ) : (
+                        <div className="cell-content">
+                          {postulation.nomEntreprise || <span className="placeholder">—</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editData.poste}
+                          onChange={(e) => setEditData({ ...editData, poste: e.target.value })}
+                          placeholder="Poste"
+                          className="table-input"
+                        />
+                      ) : (
+                        <div className="cell-content">
+                          {postulation.poste || <span className="placeholder">—</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <div className="edit-platform">
+                          <select
+                            value={editData.plateforme}
+                            onChange={(e) => setEditData({ ...editData, plateforme: e.target.value })}
+                            className="table-select"
+                          >
+                            <option value="">Sélectionner...</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Indeed">Indeed</option>
+                            <option value="Autre">Autre plateforme</option>
+                          </select>
+                          {(editData.plateforme === 'Autre' || (editData.plateforme && editData.plateforme !== 'Autre')) && (
+                            <input
+                              type="text"
+                              value={editData.lien}
+                              onChange={(e) => setEditData({ ...editData, lien: e.target.value })}
+                              placeholder={editData.plateforme === 'Autre' ? 'Nom de la plateforme' : 'Lien (optionnel)'}
+                              className="table-input"
+                              style={{ marginTop: '8px' }}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="cell-content">
+                          <div className="platform-info">
+                            {postulation.plateforme && (
+                              <span className="platform-badge">{postulation.plateforme}</span>
+                            )}
+                            {postulation.lien && (
+                              <span className="platform-link" title={postulation.lien}>
+                                {postulation.lien.length > 30 ? postulation.lien.substring(0, 30) + '...' : postulation.lien}
+                              </span>
+                            )}
+                            {!postulation.plateforme && !postulation.lien && (
+                              <span className="placeholder">—</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="actions-cell">
+                      {isEditing ? (
+                        <div className="action-buttons">
+                          <button
+                            onClick={() => sauvegarderEdition(postulation._id)}
+                            className="btn-action btn-save"
+                            title="Sauvegarder"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            onClick={annulerEdition}
+                            className="btn-action btn-cancel"
+                            title="Annuler"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="action-buttons">
+                          <button
+                            onClick={() => activerEdition(postulation)}
+                            className="btn-action btn-edit"
+                            title="Modifier"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => supprimerPostulation(postulation._id)}
+                            className="btn-action btn-delete"
+                            title="Supprimer"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
